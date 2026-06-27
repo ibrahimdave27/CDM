@@ -149,28 +149,32 @@ jobs:
           )
 
           # ── Open (or update) GitHub issue ─────────────────────────────
+          # gh issue list outputs: <number> TAB <title> TAB <state> TAB ...
           EXISTING_ISSUE=$(gh issue list \
             --repo "$REPO" \
             --label "cdm-validation" \
             --state open \
-            --json number \
-            --jq '.[0].number // empty' 2>/dev/null || true)
+            --limit 1 \
+            2>/dev/null | awk '{print $1}' || true)
+
+          # Write issue body to a temp file to avoid shell quoting issues
+          echo "$ISSUE_BODY" > /tmp/issue_body.md
 
           if [ -n "$EXISTING_ISSUE" ]; then
             echo "Updating existing issue #$EXISTING_ISSUE"
             gh issue comment "$EXISTING_ISSUE" \
               --repo "$REPO" \
-              --body "$ISSUE_BODY"
+              --body-file /tmp/issue_body.md
             ISSUE_NUMBER=$EXISTING_ISSUE
           else
             echo "Creating new issue"
-            ISSUE_NUMBER=$(gh issue create \
+            # gh issue create outputs the URL of the new issue; extract the number from it
+            ISSUE_URL=$(gh issue create \
               --repo "$REPO" \
               --title "❌ CDM file validation errors detected" \
-              --body "$ISSUE_BODY" \
-              --label "cdm-validation" \
-              --json number \
-              --jq '.number')
+              --body-file /tmp/issue_body.md \
+              --label "cdm-validation")
+            ISSUE_NUMBER="${ISSUE_URL##*/}"
             echo "Created issue #$ISSUE_NUMBER"
           fi
 
@@ -218,36 +222,35 @@ jobs:
           git push origin "$BRANCH"
 
           # ── Open pull request ──────────────────────────────────────────
-          PR_BODY=$(cat << PRBODY
-          ## Automated CDM validation fix
+          cat > /tmp/pr_body.md << PRBODY
+            ## Automated CDM validation fix
 
-          This PR was created automatically by the CDM validation workflow.
+            This PR was created automatically by the CDM validation workflow.
 
-          Closes #${ISSUE_NUMBER}
+            Closes #${ISSUE_NUMBER}
 
-          ### What was done
-          Lines that failed format validation have been **commented out** with a
-          \`# TODO FIX\` marker so the files remain loadable while the errors are
-          reviewed and corrected by a maintainer.
+            ### What was done
+            Lines that failed format validation have been **commented out** with a
+            \`# TODO FIX\` marker so the files remain loadable while the errors are
+            reviewed and corrected by a maintainer.
 
-          ### Next steps
-          1. Review each \`# TODO FIX\` line in the changed files.
-          2. Either correct the line to match the expected format, or remove it if it is no longer needed.
-          3. Approve and merge this PR once all lines are fixed.
+            ### Next steps
+            1. Review each \`# TODO FIX\` line in the changed files.
+            2. Either correct the line to match the expected format, or remove it if it is no longer needed.
+            3. Approve and merge this PR once all lines are fixed.
 
-          > ⚠️ Do **not** merge this PR without reviewing the commented-out lines — they are placeholders, not final fixes.
-          PRBODY
-          )
+            > ⚠️ Do **not** merge this PR without reviewing the commented-out lines — they are placeholders, not final fixes.
+            PRBODY
 
-          gh pr create \
-            --repo "$REPO" \
-            --head "$BRANCH" \
-            --base "${{ github.ref_name }}" \
-            --title "fix: CDM validation errors (issue #${ISSUE_NUMBER})" \
-            --body "$PR_BODY" \
-            --label "cdm-validation"
+                    gh pr create \
+                        --repo "$REPO" \
+                        --head "$BRANCH" \
+                        --base "${{ github.ref_name }}" \
+                        --title "fix: CDM validation errors (issue #${ISSUE_NUMBER})" \
+                        --body-file /tmp/pr_body.md \
+                        --label "cdm-validation"
 
-          echo "✅ Issue #${ISSUE_NUMBER} and PR opened on branch $BRANCH"
+                    echo "✅ Issue #${ISSUE_NUMBER} and PR opened on branch $BRANCH"
 
       # ------------------------------------------------------------------ #
       # 5. Fail the job if there were errors (after PR/issue created)      #
