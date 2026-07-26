@@ -27,14 +27,14 @@ def error(filepath, lineno, msg, original_line=""):
         "original": original_line,
         "message": msg,
     })
-    print(f"  ❌ Line {lineno}: {msg}")
+    print(f"  \u274c Line {lineno}: {msg}")
     # GitHub Actions annotation
     print(f"::error file={filepath},line={lineno}::{msg}")
 
 
 def warn(filepath, lineno, msg):
     warnings.append(f"::warning file={filepath},line={lineno}::{msg}")
-    print(f"  ⚠️  Line {lineno}: {msg}")
+    print(f"  \u26a0\ufe0f  Line {lineno}: {msg}")
     print(f"::warning file={filepath},line={lineno}::{msg}")
 
 
@@ -65,7 +65,7 @@ RWY_RE  = re.compile(r"^\d{2}[LCR]?$")
 
 
 def validate_taxizones(filepath):
-    print(f"\n📄 Validating {filepath}")
+    print(f"\n\U0001f4c4 Validating {filepath}")
     lines = read_lines(filepath)
     if not lines:
         warn(filepath, 0, "File is empty")
@@ -76,7 +76,7 @@ def validate_taxizones(filepath):
 
         if len(parts) not in (11, 12, 13):
             error(filepath, lineno,
-                  f"Expected 11–13 colon-separated fields, got {len(parts)}: {line!r}",
+                  f"Expected 11\u201313 colon-separated fields, got {len(parts)}: {line!r}",
                   line)
             continue
 
@@ -111,7 +111,7 @@ def validate_taxizones(filepath):
             deice_vals = parts[11].split(",")
             if len(deice_vals) != 5:
                 error(filepath, lineno,
-                      f"De-ice field must have exactly 5 comma-separated values (REM1–REM5), "
+                      f"De-ice field must have exactly 5 comma-separated values (REM1\u2013REM5), "
                       f"got {len(deice_vals)}: {parts[11]!r}", line)
             for v in deice_vals:
                 try:
@@ -126,7 +126,7 @@ def validate_taxizones(filepath):
                 error(filepath, lineno,
                       f"EVENT_EXTRA_TIME '{parts[12]}' is not an integer", line)
 
-    print(f"  ✅ {len(lines)} data line(s) checked")
+    print(f"  \u2705 {len(lines)} data line(s) checked")
 
 
 # ---------------------------------------------------------------------------
@@ -151,7 +151,7 @@ def validate_rate(filepath, lineno, value, line):
 
 
 def validate_rate_txt(filepath):
-    print(f"\n📄 Validating {filepath}")
+    print(f"\n\U0001f4c4 Validating {filepath}")
     lines = read_lines(filepath)
     if not lines:
         warn(filepath, 0, "File is empty")
@@ -183,7 +183,7 @@ def validate_rate_txt(filepath):
         validate_runway_list(filepath, lineno, dep_rwy_list, "DependentRwyList",line)
         validate_rate(filepath, lineno, rate, line)
 
-    print(f"  ✅ {len(lines)} data line(s) checked")
+    print(f"  \u2705 {len(lines)} data line(s) checked")
 
 
 # ---------------------------------------------------------------------------
@@ -196,7 +196,7 @@ SEP_RE = re.compile(r"^\d+(\.\d+)?$")
 
 
 def validate_sid_interval(filepath):
-    print(f"\n📄 Validating {filepath}")
+    print(f"\n\U0001f4c4 Validating {filepath}")
     lines = read_lines(filepath)
     if not lines:
         warn(filepath, 0, "File is empty")
@@ -221,9 +221,9 @@ def validate_sid_interval(filepath):
                 error(filepath, lineno, f"RUNWAY '{rwy}' does not match expected pattern", line)
             if not SID_RE.match(sid1):
                 error(filepath, lineno,
-                      f"SID1 '{sid1}' must be 3–5 uppercase letters (fix only, e.g. LARPA not LARPA4Q)", line)
+                      f"SID1 '{sid1}' must be 3\u20135 uppercase letters (fix only, e.g. LARPA not LARPA4Q)", line)
             if not SID_RE.match(sid2):
-                error(filepath, lineno, f"SID2 '{sid2}' must be 3–5 uppercase letters", line)
+                error(filepath, lineno, f"SID2 '{sid2}' must be 3\u20135 uppercase letters", line)
             if not SEP_RE.match(sep):
                 error(filepath, lineno, f"Separation '{sep}' must be a positive decimal number", line)
         else:
@@ -235,21 +235,21 @@ def validate_sid_interval(filepath):
             for sid, label in ((sid1, "SID1"), (sid2, "SID2")):
                 if not SID_RE.match(sid):
                     error(filepath, lineno,
-                          f"{label} '{sid}' must be 3–5 uppercase letters", line)
+                          f"{label} '{sid}' must be 3\u20135 uppercase letters", line)
             if not SEP_RE.match(sep):
                 error(filepath, lineno, f"Separation '{sep}' must be a positive decimal number", line)
 
-    print(f"  ✅ {len(lines)} data line(s) checked")
+    print(f"  \u2705 {len(lines)} data line(s) checked")
 
 
 # ---------------------------------------------------------------------------
-# CTOT.txt / slots.txt  — Event SLOTs
+# CTOT.txt / slots.txt  \u2014 Event SLOTs
 #
-#   <cid>,<slot>                                      — 2 fields
-#   <cid>,<callsign>,<slot>                           — 3 fields
-#   <cid>,<callsign>,<departure>,<destination>,<slot>  — 5 fields
+#   <cid>,<slot>                                      \u2014 2 fields
+#   <cid>,<callsign>,<slot>                           \u2014 3 fields
+#   <cid>,<callsign>,<departure>,<destination>,<slot>  \u2014 5 fields
 # ---------------------------------------------------------------------------
-CID_RE      = re.compile(r"^\d{7}$")
+CID_RE      = re.compile(r"^\d{6,7}$")
 CALLSIGN_RE = re.compile(r"^[A-Z0-9]{3,7}$")
 SLOT_RE     = re.compile(r"^([01]\d|2[0-3])[0-5]\d$")
 
@@ -258,24 +258,24 @@ def validate_slot_fields(filepath, lineno, parts, line):
     n = len(parts)
     cid = parts[0]
     if not CID_RE.match(cid):
-        error(filepath, lineno, f"CID '{cid}' must be a 7-digit integer (VATSIM CID)", line)
+        error(filepath, lineno, f"CID '{cid}' must be a 6- or 7-digit integer (VATSIM CID)", line)
 
     if n == 2:
         if not SLOT_RE.match(parts[1]):
             error(filepath, lineno,
-                  f"SLOT '{parts[1]}' must be a 4-digit HHMM time (0000–2359)", line)
+                  f"SLOT '{parts[1]}' must be a 4-digit HHMM time (0000\u20132359)", line)
     elif n == 3:
         if not CALLSIGN_RE.match(parts[1]):
             error(filepath, lineno,
-                  f"Callsign '{parts[1]}' must be 3–7 uppercase alphanumeric characters", line)
+                  f"Callsign '{parts[1]}' must be 3\u20137 uppercase alphanumeric characters", line)
         if not SLOT_RE.match(parts[2]):
             error(filepath, lineno,
-                  f"SLOT '{parts[2]}' must be a 4-digit HHMM time (0000–2359)", line)
+                  f"SLOT '{parts[2]}' must be a 4-digit HHMM time (0000\u20132359)", line)
     elif n == 5:
         callsign, departure, destination, slot = parts[1], parts[2], parts[3], parts[4]
         if not CALLSIGN_RE.match(callsign):
             error(filepath, lineno,
-                  f"Callsign '{callsign}' must be 3–7 uppercase alphanumeric characters", line)
+                  f"Callsign '{callsign}' must be 3\u20137 uppercase alphanumeric characters", line)
         if not ICAO_RE.match(departure):
             error(filepath, lineno,
                   f"Departure '{departure}' is not a valid 4-letter ICAO code", line)
@@ -284,35 +284,35 @@ def validate_slot_fields(filepath, lineno, parts, line):
                   f"Destination '{destination}' is not a valid 4-letter ICAO code", line)
         if not SLOT_RE.match(slot):
             error(filepath, lineno,
-                  f"SLOT '{slot}' must be a 4-digit HHMM time (0000–2359)", line)
+                  f"SLOT '{slot}' must be a 4-digit HHMM time (0000\u20132359)", line)
     else:
         error(filepath, lineno,
-              f"Expected 2, 3, or 5 comma-separated fields, got {n} — "
+              f"Expected 2, 3, or 5 comma-separated fields, got {n} \u2014 "
               f"valid formats: <cid>,<slot> | <cid>,<callsign>,<slot> | "
               f"<cid>,<callsign>,<dep>,<dest>,<slot>", line)
 
 
 def validate_slots(filepath):
-    print(f"\n📄 Validating {filepath}")
+    print(f"\n\U0001f4c4 Validating {filepath}")
     lines = read_lines(filepath)
     if not lines:
-        warn(filepath, 0, "File is empty — no slot entries found")
+        warn(filepath, 0, "File is empty \u2014 no slot entries found")
         return
     for lineno, line in lines:
         validate_slot_fields(filepath, lineno, line.split(","), line)
-    print(f"  ✅ {len(lines)} slot line(s) checked")
+    print(f"  \u2705 {len(lines)} slot line(s) checked")
 
 
 # ---------------------------------------------------------------------------
-# cad.txt — schema TBD; check non-empty
+# cad.txt \u2014 schema TBD; check non-empty
 # ---------------------------------------------------------------------------
 def validate_cad(filepath):
-    print(f"\n📄 Validating {filepath}")
+    print(f"\n\U0001f4c4 Validating {filepath}")
     lines = read_lines(filepath)
     if not lines:
         warn(filepath, 0, "cad.txt is empty")
         return
-    print(f"  ✅ {len(lines)} data line(s) present (structure check skipped — schema unknown)")
+    print(f"  \u2705 {len(lines)} data line(s) present (structure check skipped \u2014 schema unknown)")
 
 
 # ---------------------------------------------------------------------------
@@ -341,14 +341,14 @@ def main():
 
     for filepath in sorted(target_files):
         if not os.path.isfile(filepath):
-            print(f"⚠️  File not found: {filepath}")
+            print(f"\u26a0\ufe0f  File not found: {filepath}")
             continue
         basename = Path(filepath).name
         validator = VALIDATORS.get(basename)
         if validator:
             validator(filepath)
         else:
-            print(f"⚠️  No validator registered for '{basename}' — skipping")
+            print(f"\u26a0\ufe0f  No validator registered for '{basename}' \u2014 skipping")
 
     print("\n" + "=" * 60)
 
@@ -362,13 +362,13 @@ def main():
         json.dump(report, f, indent=2)
 
     if error_records:
-        print(f"\n❌ Validation FAILED — {len(error_records)} error(s), {len(warnings)} warning(s)")
+        print(f"\n\u274c Validation FAILED \u2014 {len(error_records)} error(s), {len(warnings)} warning(s)")
         sys.exit(1)
     elif warnings:
-        print(f"\n⚠️  Validation passed with {len(warnings)} warning(s)")
+        print(f"\n\u26a0\ufe0f  Validation passed with {len(warnings)} warning(s)")
         sys.exit(0)
     else:
-        print(f"\n✅ All files passed validation!")
+        print(f"\n\u2705 All files passed validation!")
         sys.exit(0)
 
 
